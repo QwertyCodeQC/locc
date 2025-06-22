@@ -15,7 +15,7 @@ var Languages = []LanguageMeta{
 	{".ts", "TypeScript", Blue},
 	{".tsx", "TSX", Blue},
 	{".jsx", "JSX", Yellow},
-	{".py", "Python", Green},
+	{".py", "Python", Yellow},
 	{".sh", "Shell", Green},
 	{".rb", "Ruby", Red},
 	{".rs", "Rust", Red},
@@ -44,6 +44,8 @@ var Languages = []LanguageMeta{
 	{".loccignore", "Loccignore", Orange},
 	{".log", "Log", Gray},
 	{".lock", "Lockfile", Gray},
+	{".ps1", "PowerShell", Blue},
+	{".psm1", "PowerShell Module", Magenta},
 }
 
 var CommentMarkers = map[string]string{
