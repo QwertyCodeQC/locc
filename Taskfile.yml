@@ -3,17 +3,24 @@
 version: '3'
 
 tasks:
-  build linux:
+  build lin:
     desc: Build the Linux binary
     cmds:
-      - go build -o bin/hello-linux ./cmd/locc.exe
+      - go build -o bin/locc . -ldflags="-s -w"
     env:
       GOOS: linux
       GOARCH: amd64
-  build windows:
+  build win:
     desc: Build the Windows binary
     cmds:
-      - go build -o bin/hello-windows.exe ./cmd/locc.exe
+      - go build -o bin/locc.exe . -ldflags="-s -w"
+    env:
+      GOOS: windows
+      GOARCH: amd64
+  locc:
+    desc: Run locc
+    cmds:
+      - task build windows
     env:
       GOOS: windows
       GOARCH: amd64
