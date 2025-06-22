@@ -69,8 +69,6 @@ var Languages = []LanguageMeta{
 	{".docker-compose.yml", "Docker Compose", Blue},
 	{".docker-compose.yaml", "Docker Compose", Blue},
 	{".gitlab-ci.yml", "GitLab CI", Orange},
-	{".github/workflows", "GitHub Actions", Orange},
-	{".circleci/config.yml", "CircleCI", Orange},
 	{".travis.yml", "Travis CI", Orange},
 	{".appveyor.yml", "AppVeyor", Orange},
 	{".azure-pipelines.yml", "Azure Pipelines", Orange},
