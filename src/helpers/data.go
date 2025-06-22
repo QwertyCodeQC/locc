@@ -42,6 +42,8 @@ var Languages = []LanguageMeta{
 	{".gitignore", "Gitignore", Orange},
 	{".dockerignore", "Dockerignore", Blue},
 	{".loccignore", "Loccignore", Orange},
+	{".log", "Log", Gray},
+	{".lock", "Lockfile", Gray},
 }
 
 var CommentMarkers = map[string]string{
