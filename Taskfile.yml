@@ -11,6 +11,16 @@ tasks:
     env:
       GOOS: linux
       GOARCH: amd64
+
+  build:lin:32:
+    desc: Build the Linux binary
+    cmds:
+      - golangci-lint run
+      - go build -ldflags="-s -w" -o bin/locc ./src 
+    env:
+      GOOS: linux
+      GOARCH: amd64
+
   build:win:
     desc: Build the Windows binary
     cmds:
@@ -19,11 +29,27 @@ tasks:
     env:
       GOOS: windows
       GOARCH: amd64
+
+  build:win:32:
+    desc: Build the Windows binary
+    cmds:
+      - golangci-lint run
+      - go build -ldflags="-s -w" -o bin/locc.exe ./src
+    env:
+      GOOS: windows
+      GOARCH: x86
+
   lint:
     desc: Run linters
     cmds:
       - golangci-lint run
+
   fmt: 
     desc: Run go fmt
     cmds:
       - golangci-lint fmt 
+      
+  tidy:
+    desc: Tidy up go.mod and go.sum
+    cmds:
+      - go mod tidy

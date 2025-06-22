@@ -1,21 +1,68 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/qwertycodeqc/locc/src/helpers"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 const VERSION = "1.0"
-var IGNORE = []string{".git", "node_modules", "dist", "coverage"}
+
+var IGNORE = []string{"**/.git", "**/node_modules", "**/dist", "**/coverage", "**/README.md", "**/LICENSE"}
 var BINARY_EXTENSIONS = []string{"*.exe", "*.dll", "*.so", "*.dylib", "*.o", "*.a", "*.lib", "*.class", "*.jar", "*.pyc", "*.pyo"}
+
+func must(v any, err error) any {
+	if err != nil {
+		fmt.Println(helpers.Colorize("Error:", helpers.Red), err)
+		os.Exit(1)
+	}
+	return v
+}
 
 func main() {
 	fmt.Println(helpers.Colorize("locc", helpers.Cyan, helpers.Bold), "v"+VERSION)
+	IGNORE = append(IGNORE, BINARY_EXTENSIONS...)
 	loadIgnore()
+	var totalLines int
+	err := filepath.Walk(must(os.Getwd()).(string), func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() && shouldIgnore(path) {
+			return filepath.SkipDir
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if shouldIgnore(path) {
+			return filepath.SkipDir
+		}
+
+		lines, err := countLines(path)
+		if err != nil {
+			fmt.Println(helpers.Colorize("Error counting lines in file:", helpers.Red), path, err)
+			return nil
+		}
+		totalLines += lines
+		fmt.Printf("%s: %d lines\n", path, lines)
+		return nil
+	})
+	if err != nil {
+		fmt.Println(helpers.Colorize("Error walking the path:", helpers.Red), err)
+		return
+	}
+	fmt.Println(helpers.Colorize("Total lines of code:", helpers.Green), totalLines)
 }
 
 func loadIgnore() {
@@ -42,10 +89,47 @@ func loadIgnore() {
 					}
 				}
 				IGNORE = newIgnore
-			// Add ignore handling
+				// Add ignore handling
 			} else if lineString != "" && !bytes.HasPrefix(line, []byte("#")) {
 				IGNORE = append(IGNORE, lineString)
 			}
 		}
 	}
+}
+
+func countLines(path string) (int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close() //nolint
+
+	var count int
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		count++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func shouldIgnore(path string) bool {
+	for _, ignore := range IGNORE {
+		ignore = filepath.ToSlash(ignore)
+		matched, err := doublestar.Match(ignore, path)
+		if err != nil {
+			fmt.Println(helpers.Colorize("Error matching ignore pattern:", helpers.Red), err)
+			continue
+		}
+		if matched {
+			return true
+		}
+	}
+
+	return false
 }
