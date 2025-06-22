@@ -2,11 +2,18 @@
 
 version: '3'
 
-vars:
-  GREETING: Hello, World!
-
 tasks:
-  default:
+  build linux:
+    desc: Build the Linux binary
     cmds:
-      - echo "{{.GREETING}}"
-    silent: true
+      - go build -o bin/hello-linux ./cmd/locc.exe
+    env:
+      GOOS: linux
+      GOARCH: amd64
+  build windows:
+    desc: Build the Windows binary
+    cmds:
+      - go build -o bin/hello-windows.exe ./cmd/locc.exe
+    env:
+      GOOS: windows
+      GOARCH: amd64
