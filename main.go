@@ -14,7 +14,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-const VERSION = "1.0"
+const VERSION = "1.1"
 
 var IGNORE = []string{".git/**", "**/node_modules/**", "**/dist/**", "**/coverage/**", "yarn.lock", "package-lock.json", "pnpm-lock.yaml", ".loccignore", "**/vendor/**", "**/build/**", "**/out/**", "**/.vscode/**", "**/.idea/**", "**/.cache/**", "**/.next/**", "**/.nuxt/**"}
 
