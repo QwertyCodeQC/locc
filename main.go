@@ -16,8 +16,8 @@ import (
 
 const VERSION = "1.0"
 
-var IGNORE = []string{"**/.git/**", "**/node_modules/**", "**/dist/**", "**/coverage/**", "README.md", "LICENSE"}
-var BINARY_EXTENSIONS = []string{"**/*.exe", "**/*.dll", "**/*.so", "**/*.dylib", "**/*.o", "**/*.a", "**/*.lib", "**/*.class", "**/*.jar", "**/*.pyc", "**/*.pyo"}
+var IGNORE = []string{".git", "**/node_modules/**", "**/dist/**", "**/coverage/**"}
+var BINARY_EXTENSIONS = []string{"**/*.exe", "**/*.dll", "**/*.so", "**/*.dylib", "**/*.o", "**/*.a", "**/*.lib", "**/*.class", "**/*.jar", "**/*.pyc", "**/*.pyo", "**/*.jpg", "**/*.png", "**/*.gif", "**/*.svg", "**/*.ico", "**/*.webp", "**/*.mp4", "**/*.mp3", "**/*.wav", "**/*.flac", "**/*.avi", "**/*.mkv", "**/*.mov", "**/*.wmv", "**/*.zip", "**/*.tar.gz", "**/*.tar.bz2", "**/*.rar"}
 
 func must(v any, err error) any {
 	if err != nil {
@@ -31,14 +31,15 @@ func main() {
 	fmt.Println(helpers.Colorize("locc", helpers.Cyan, helpers.Bold), "v"+VERSION)
 	IGNORE = append(IGNORE, BINARY_EXTENSIONS...)
 	loadIgnore()
+	fmt.Println(helpers.Colorize("Ignoring patterns:", helpers.Yellow))
+	for _, pattern := range IGNORE {
+		fmt.Print("  ", helpers.Colorize(pattern, helpers.Yellow))
+	}
+	fmt.Println()
 	var totalLines int
 	err := filepath.Walk(must(os.Getwd()).(string), func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
-		}
-
-		if info.IsDir() && shouldIgnore(path) {
-			return filepath.SkipDir
 		}
 
 		if info.IsDir() {
@@ -46,7 +47,7 @@ func main() {
 		}
 
 		if shouldIgnore(path) {
-			return filepath.SkipDir
+			return nil
 		}
 
 		lines, err := countLines(path)
@@ -131,17 +132,37 @@ func countLines(path string) (int, error) {
 func shouldIgnore(path string) bool {
 	norm := filepath.ToSlash(path)
 
-	for _, pattern := range IGNORE {
-		pattern = filepath.ToSlash(pattern)
-		matched, err := doublestar.Match(pattern, norm)
-		if err != nil {
-			fmt.Println("Invalid pattern:", pattern, err)
-			continue
-		}
-		if matched {
-			return true
-		}
+	rel, err := filepath.Rel(must(os.Getwd()).(string), path)
+	if err != nil {
+		rel = norm
+	} else {
+		rel = filepath.ToSlash(rel)
 	}
 
+	for _, pattern := range IGNORE {
+		pattern = filepath.ToSlash(pattern)
+
+		// Match against:
+		// - base name (e.g. go.mod)
+		// - relative path (e.g. .git/hooks/xyz)
+		// - full normalized path
+		candidates := []string{
+			filepath.Base(norm),
+			rel,
+			norm,
+		}
+
+		for _, candidate := range candidates {
+			matched, err := doublestar.Match(pattern, candidate)
+			if err != nil {
+				fmt.Println("Bad pattern:", pattern, err)
+				continue
+			}
+			if matched {
+				//fmt.Println(helpers.Colorize("Ignoring:", helpers.Yellow), helpers.Colorize(path, helpers.Blue), "due to pattern", helpers.Colorize(pattern, helpers.Yellow))
+				return true
+			}
+		}
+	}
 	return false
 }
