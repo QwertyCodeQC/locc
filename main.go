@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -55,9 +56,14 @@ func main() {
 		}
 
 		lines, commentCount, blankCount, err := countLines(path, commentMark)
-		if err != nil {
-			fmt.Println(helpers.Colorize("Error counting lines in file:", helpers.Red), path, err)
-			return nil
+		if err != nil  {
+			if errors.Is(err, bufio.ErrTooLong) {
+				fmt.Println(helpers.Colorize("Skipping file: too long", helpers.Red), helpers.Colorize(path, helpers.Blue))
+				return nil
+			} else {
+				fmt.Println(helpers.Colorize("Error reading file:", helpers.Red), err)
+				return nil
+			}
 		}
 		totalLines += lines
 		totalCommentCount += commentCount
@@ -84,7 +90,7 @@ func main() {
 		fmt.Println(
 			helpers.Colorize("▪︎ ", helpers.Yellow),
 			helpers.Colorize(lang.Lang, lang.Color),
-			helpers.Colorize(relativePath, helpers.Blue),
+			helpers.Colorize(relativePath),
 			helpers.Colorize(fmt.Sprint(lines), helpers.Yellow),
 			helpers.Colorize(fmt.Sprint(commentCount), helpers.Green),
 			helpers.Colorize(fmt.Sprint(blankCount), helpers.Gray),
