@@ -3,19 +3,19 @@
 version: '3'
 
 tasks:
-  build lin:
+  build:lin:
     desc: Build the Linux binary
     cmds:
       - golangci-lint run
-      - go build -o bin/locc ./src -ldflags="-s -w"
+      - go build -ldflags="-s -w" -o bin/locc ./src 
     env:
       GOOS: linux
       GOARCH: amd64
-  build win:
+  build:win:
     desc: Build the Windows binary
     cmds:
       - golangci-lint run
-      - go build -o bin/locc.exe ./src -ldflags="-s -w"
+      - go build -ldflags="-s -w" -o bin/locc.exe ./src
     env:
       GOOS: windows
       GOARCH: amd64
