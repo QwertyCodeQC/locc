@@ -17,7 +17,8 @@ import (
 const VERSION = "1.0"
 
 var IGNORE = []string{".git", "**/node_modules/**", "**/dist/**", "**/coverage/**"}
-var BINARY_EXTENSIONS = []string{"**/*.exe", "**/*.dll", "**/*.so", "**/*.dylib", "**/*.o", "**/*.a", "**/*.lib", "**/*.class", "**/*.jar", "**/*.pyc", "**/*.pyo", "**/*.jpg", "**/*.png", "**/*.gif", "**/*.svg", "**/*.ico", "**/*.webp", "**/*.mp4", "**/*.mp3", "**/*.wav", "**/*.flac", "**/*.avi", "**/*.mkv", "**/*.mov", "**/*.wmv", "**/*.zip", "**/*.tar.gz", "**/*.tar.bz2", "**/*.rar"}
+
+
 
 func must(v any, err error) any {
 	if err != nil {
@@ -29,14 +30,12 @@ func must(v any, err error) any {
 
 func main() {
 	fmt.Println(helpers.Colorize("locc", helpers.Cyan, helpers.Bold), "v"+VERSION)
-	IGNORE = append(IGNORE, BINARY_EXTENSIONS...)
+	IGNORE = append(IGNORE, helpers.BINARY_EXTENSIONS...)
 	loadIgnore()
-	fmt.Println(helpers.Colorize("Ignoring patterns:", helpers.Yellow))
-	for _, pattern := range IGNORE {
-		fmt.Print("  ", helpers.Colorize(pattern, helpers.Yellow))
-	}
-	fmt.Println()
+
 	var totalLines int
+	var totalCommentCount int
+	var totalBlankCount int
 	err := filepath.Walk(must(os.Getwd()).(string), func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -50,22 +49,45 @@ func main() {
 			return nil
 		}
 
-		lines, err := countLines(path)
+		commentMark := helpers.CommentMarkers[filepath.Ext(path)]
+		if commentMark == "" {
+			commentMark = "//"
+		}
+
+		lines, commentCount, blankCount, err := countLines(path, commentMark)
 		if err != nil {
 			fmt.Println(helpers.Colorize("Error counting lines in file:", helpers.Red), path, err)
 			return nil
 		}
 		totalLines += lines
+		totalCommentCount += commentCount
+		totalBlankCount += blankCount
 		relativePath, err := filepath.Rel(must(os.Getwd()).(string), path)
 		if err != nil {
 			fmt.Println(helpers.Colorize("Error getting relative path:", helpers.Red), err)
 			return nil
 		}
 		relativePath = filepath.ToSlash(relativePath)
+
+		lang := helpers.LanguageMeta{
+			Lang:  "Unknown",
+			Color: helpers.Gray,
+		}
+		ext := filepath.Ext(relativePath)
+		for _, l := range helpers.Languages {
+			if l.Ext == ext {
+				lang = l
+				break
+			}
+		}
+
 		fmt.Println(
 			helpers.Colorize("▪︎ ", helpers.Yellow),
+			helpers.Colorize(lang.Lang, lang.Color),
 			helpers.Colorize(relativePath, helpers.Blue),
 			helpers.Colorize(fmt.Sprint(lines), helpers.Yellow),
+			helpers.Colorize(fmt.Sprint(commentCount), helpers.Green),
+			helpers.Colorize(fmt.Sprint(blankCount), helpers.Gray),
 		)
 		return nil
 	})
@@ -73,7 +95,27 @@ func main() {
 		fmt.Println(helpers.Colorize("Error walking the path:", helpers.Red), err)
 		return
 	}
-	fmt.Println(helpers.Colorize(fmt.Sprintf(" TOTAL %d ", totalLines), helpers.YellowBg, helpers.Black))
+	codeLines := totalLines - totalCommentCount - totalBlankCount
+	var codePercent float64
+	if totalLines > 0 {
+		codePercent = float64(codeLines) / float64(totalLines) * 100.0
+	}
+	commentsString := fmt.Sprintf(" COMMENTS %d ", totalCommentCount)
+	totalString := fmt.Sprintf(" TOTAL %d ", totalLines)
+	blanksString := fmt.Sprintf(" BLANKS %d ", totalBlankCount)
+	codeLinesString := fmt.Sprintf(" CODE %d (%.2f%%) ", codeLines, codePercent)
+
+	longestLength := max(len(totalString), len(commentsString), len(blanksString), len(codeLinesString))
+	totalString = fmt.Sprintf("%-*s", longestLength, totalString)
+	commentsString = fmt.Sprintf("%-*s", longestLength, commentsString)
+	blanksString = fmt.Sprintf("%-*s", longestLength, blanksString)
+	codeLinesString = fmt.Sprintf("%-*s", longestLength, codeLinesString)
+
+	fmt.Println()
+	fmt.Println(helpers.Colorize(totalString, helpers.YellowBg, helpers.Black))
+	fmt.Println(helpers.Colorize(commentsString, helpers.GreenBg, helpers.Black))
+	fmt.Println(helpers.Colorize(blanksString, helpers.GrayBg, helpers.Black))
+	fmt.Println(helpers.Colorize(codeLinesString, helpers.CyanBg, helpers.Black))
 }
 
 func loadIgnore() {
@@ -108,25 +150,36 @@ func loadIgnore() {
 	}
 }
 
-func countLines(path string) (int, error) {
+// Returns count, commentCount, blankCount, and error.
+func countLines(path string, comment string) (int, int, int, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return 0, err
+		return 0, 0, 0, err
 	}
 	defer file.Close() //nolint
 
 	var count int
+	var commentCount int
+	var blankCount int
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.TrimSpace(line)
+		if line == "" {
+			blankCount++
+		}
+		if strings.HasPrefix(line, comment) {
+			commentCount++
+		}
 		count++
 	}
 
 	if err := scanner.Err(); err != nil {
-		return 0, err
+		return 0, 0, 0, err
 	}
 
-	return count, nil
+	return count, commentCount, blankCount, nil
 }
 
 func shouldIgnore(path string) bool {
