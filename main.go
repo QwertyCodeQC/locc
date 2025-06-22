@@ -16,7 +16,7 @@ import (
 
 const VERSION = "1.0"
 
-var IGNORE = []string{".git", "**/node_modules/**", "**/dist/**", "**/coverage/**"}
+var IGNORE = []string{".git/**", "**/node_modules/**", "**/dist/**", "**/coverage/**", "yarn.lock", "package-lock.json", "pnpm-lock.yaml", ".loccignore", "**/vendor/**", "**/build/**", "**/out/**", "**/.vscode/**", "**/.idea/**", "**/.cache/**", "**/.next/**", "**/.nuxt/**"}
 
 
 
@@ -163,6 +163,7 @@ func countLines(path string, comment string) (int, int, int, error) {
 	var blankCount int
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), bufio.MaxScanTokenSize)
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
