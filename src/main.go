@@ -16,8 +16,8 @@ import (
 
 const VERSION = "1.0"
 
-var IGNORE = []string{"**/.git", "**/node_modules", "**/dist", "**/coverage", "**/README.md", "**/LICENSE"}
-var BINARY_EXTENSIONS = []string{"*.exe", "*.dll", "*.so", "*.dylib", "*.o", "*.a", "*.lib", "*.class", "*.jar", "*.pyc", "*.pyo"}
+var IGNORE = []string{"**/.git/**", "**/node_modules/**", "**/dist/**", "**/coverage/**", "README.md", "LICENSE"}
+var BINARY_EXTENSIONS = []string{"**/*.exe", "**/*.dll", "**/*.so", "**/*.dylib", "**/*.o", "**/*.a", "**/*.lib", "**/*.class", "**/*.jar", "**/*.pyc", "**/*.pyo"}
 
 func must(v any, err error) any {
 	if err != nil {
@@ -55,14 +55,24 @@ func main() {
 			return nil
 		}
 		totalLines += lines
-		fmt.Printf("%s: %d lines\n", path, lines)
+		relativePath, err := filepath.Rel(must(os.Getwd()).(string), path)
+		if err != nil {
+			fmt.Println(helpers.Colorize("Error getting relative path:", helpers.Red), err)
+			return nil
+		}
+		relativePath = filepath.ToSlash(relativePath)
+		fmt.Println(
+			helpers.Colorize("▪︎ ", helpers.Yellow),
+			helpers.Colorize(relativePath, helpers.Blue),
+			helpers.Colorize(fmt.Sprint(lines), helpers.Yellow),
+		)
 		return nil
 	})
 	if err != nil {
 		fmt.Println(helpers.Colorize("Error walking the path:", helpers.Red), err)
 		return
 	}
-	fmt.Println(helpers.Colorize("Total lines of code:", helpers.Green), totalLines)
+	fmt.Println(helpers.Colorize(fmt.Sprintf(" TOTAL %d ", totalLines), helpers.YellowBg, helpers.Black))
 }
 
 func loadIgnore() {
@@ -119,11 +129,13 @@ func countLines(path string) (int, error) {
 }
 
 func shouldIgnore(path string) bool {
-	for _, ignore := range IGNORE {
-		ignore = filepath.ToSlash(ignore)
-		matched, err := doublestar.Match(ignore, path)
+	norm := filepath.ToSlash(path)
+
+	for _, pattern := range IGNORE {
+		pattern = filepath.ToSlash(pattern)
+		matched, err := doublestar.Match(pattern, norm)
 		if err != nil {
-			fmt.Println(helpers.Colorize("Error matching ignore pattern:", helpers.Red), err)
+			fmt.Println("Invalid pattern:", pattern, err)
 			continue
 		}
 		if matched {
