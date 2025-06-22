@@ -119,7 +119,6 @@ func countLines(path string) (int, error) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		
 		count++
 	}
 
