@@ -102,13 +102,16 @@ func main() {
 		return
 	}
 	codeLines := totalLines - totalCommentCount - totalBlankCount
-	var codePercent float64
+	var codePercent, blankPercent, commentPercent float64
 	if totalLines > 0 {
 		codePercent = float64(codeLines) / float64(totalLines) * 100.0
+		blankPercent = float64(totalBlankCount) / float64(totalLines) * 100.0
+		commentPercent = float64(totalCommentCount) / float64(totalLines) * 100.0
 	}
-	commentsString := fmt.Sprintf(" COMMENTS %d ", totalCommentCount)
+
+	commentsString := fmt.Sprintf(" COMMENTS %d (%.2f%%)", totalCommentCount, commentPercent)
 	totalString := fmt.Sprintf(" TOTAL %d ", totalLines)
-	blanksString := fmt.Sprintf(" BLANKS %d ", totalBlankCount)
+	blanksString := fmt.Sprintf(" BLANKS %d (%.2f%%) ", totalBlankCount, blankPercent)
 	codeLinesString := fmt.Sprintf(" CODE %d (%.2f%%) ", codeLines, codePercent)
 
 	longestLength := max(len(totalString), len(commentsString), len(blanksString), len(codeLinesString))
